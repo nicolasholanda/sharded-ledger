@@ -1,0 +1,25 @@
+x-postgres-common: &postgres-common
+  image: postgres:16
+  environment:
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: password
+    POSTGRES_DB: ledger
+
+services:
+  db-shard-0:
+    <<: *postgres-common
+    container_name: db-shard-0
+    ports:
+      - "5432:5432"
+
+  db-shard-1:
+    <<: *postgres-common
+    container_name: db-shard-1
+    ports:
+      - "5433:5432"
+
+  db-shard-2:
+    <<: *postgres-common
+    container_name: db-shard-2
+    ports:
+      - "5434:5432"
