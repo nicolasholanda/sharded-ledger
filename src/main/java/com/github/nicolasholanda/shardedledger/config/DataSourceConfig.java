@@ -1,5 +1,7 @@
 package com.github.nicolasholanda.shardedledger.config;
 
+import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +12,7 @@ import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -67,6 +70,12 @@ public class DataSourceConfig {
     public DataSource dataSource() {
         // LazyConnectionDataSourceProxy connects to the database when needed
         return new LazyConnectionDataSourceProxy(routingDataSource());
+    }
+
+    @Bean
+    public InitializingBean flywayMigrator() {
+        return () -> List.of(shard0DataSource(), shard1DataSource(), shard2DataSource())
+                .forEach(ds -> Flyway.configure().dataSource(ds).load().migrate());
     }
 
     @Bean
