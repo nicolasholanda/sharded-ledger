@@ -10,7 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -49,5 +53,27 @@ public class TransactionService {
         } finally {
             ShardRoutingDataSource.clearCurrentShard();
         }
+    }
+
+    public List<Transaction> getTransactionsByDate(LocalDate date) {
+        OffsetDateTime start = date.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
+        OffsetDateTime end = start.plusDays(1);
+
+        List<Transaction> merged = new ArrayList<>();
+        for (String shard : shardResolver.allShards()) {
+            ShardRoutingDataSource.setCurrentShard(shard);
+            try {
+                List<Transaction> found = transactionRepository
+                        .findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end);
+                log.info("Ran query on {} and returned {} transactions for {}", shard, found.size(), date);
+                merged.addAll(found);
+            } finally {
+                ShardRoutingDataSource.clearCurrentShard();
+            }
+        }
+
+        merged.sort(Comparator.comparing(Transaction::createdAt).reversed());
+        log.info("Found {} transactions across {} shards for {}", merged.size(), shardResolver.allShards().size(), date);
+        return merged;
     }
 }
