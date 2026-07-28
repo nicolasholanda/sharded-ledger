@@ -1,23 +1,28 @@
 package com.github.nicolasholanda.shardedledger.sharding;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.IntStream;
 
 @Component
 public class ShardResolver {
 
-    private static final int SHARD_COUNT = 3;
+    private static final int VIRTUAL_NODES_PER_SHARD = 200;
+
+    private final List<String> shards;
+    private final ConsistentHashRing ring;
+
+    public ShardResolver(@Value("${app.shards}") List<String> shards) {
+        this.shards = shards;
+        this.ring = new ConsistentHashRing(shards, VIRTUAL_NODES_PER_SHARD);
+    }
 
     public String resolve(Long userId) {
-        int shardIndex = Math.floorMod(userId, SHARD_COUNT);
-        return "shard" + shardIndex;
+        return ring.get(String.valueOf(userId));
     }
 
     public List<String> allShards() {
-        return IntStream.range(0, SHARD_COUNT)
-                .mapToObj(index -> "shard" + index)
-                .toList();
+        return shards;
     }
 }
