@@ -24,4 +24,10 @@ services:
     ports:
       - "5434:5432"
 
+  db-shard-3:
+    <<: *postgres-common
+    container_name: db-shard-3
+    ports:
+      - "5435:5432"
+
 # No volumes

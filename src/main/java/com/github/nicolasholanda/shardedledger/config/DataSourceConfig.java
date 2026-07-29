@@ -37,6 +37,12 @@ public class DataSourceConfig {
         return new DataSourceProperties();
     }
 
+    @Bean
+    @ConfigurationProperties(prefix = "app.datasource.shard3")
+    public DataSourceProperties shard3Properties() {
+        return new DataSourceProperties();
+    }
+
     // Data sources
     @Bean
     public DataSource shard0DataSource() {
@@ -54,12 +60,18 @@ public class DataSourceConfig {
     }
 
     @Bean
+    public DataSource shard3DataSource() {
+        return shard3Properties().initializeDataSourceBuilder().build();
+    }
+
+    @Bean
     public DataSource routingDataSource() {
         ShardRoutingDataSource routingDataSource = new ShardRoutingDataSource();
         routingDataSource.setTargetDataSources(Map.of(
                 "shard0", shard0DataSource(),
                 "shard1", shard1DataSource(),
-                "shard2", shard2DataSource()
+                "shard2", shard2DataSource(),
+                "shard3", shard3DataSource()
         ));
         routingDataSource.setDefaultTargetDataSource(shard0DataSource());
         return routingDataSource;
@@ -74,7 +86,7 @@ public class DataSourceConfig {
 
     @Bean
     public InitializingBean flywayMigrator() {
-        return () -> List.of(shard0DataSource(), shard1DataSource(), shard2DataSource())
+        return () -> List.of(shard0DataSource(), shard1DataSource(), shard2DataSource(), shard3DataSource())
                 .forEach(ds -> Flyway.configure().dataSource(ds).load().migrate());
     }
 
